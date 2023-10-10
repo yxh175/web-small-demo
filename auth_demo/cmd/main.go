@@ -1,17 +1,15 @@
-package auth_demo
+package main
 
 import (
 	"gin-mall/auth_demo/middleware"
 	"gin-mall/auth_demo/util"
 	"net/http"
-	"testing"
 
 	"github.com/gin-gonic/gin"
 )
 
-func TestUserMiddleware(t *testing.T) {
+func main() {
 	r := gin.Default()
-	r.Use(middleware.JWTMiddleware())
 	r.GET("/login", func(c *gin.Context) {
 
 		aToken, rToken, err := util.GenerateToken(123, "guest")
@@ -26,6 +24,7 @@ func TestUserMiddleware(t *testing.T) {
 			"rToken": rToken,
 		})
 	})
+	r.Use(middleware.JWTMiddleware())
 	r.GET("/hello", func(c *gin.Context) {
 		userId, idOk := c.Get("id")
 		userName, nameOk := c.Get("user_name")
@@ -38,5 +37,5 @@ func TestUserMiddleware(t *testing.T) {
 			"username": userName,
 		})
 	})
-
+	r.Run(":8000")
 }
