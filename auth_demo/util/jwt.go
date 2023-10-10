@@ -8,7 +8,7 @@ import (
 )
 
 var jwtSecret = []byte("secret")
-var accessTokenExpireDuration = 24 * time.Hour
+var accessTokenExpireDuration = 24 * time.Second
 var refreshTokenExpireDuration = 7 * 24 * time.Hour
 
 type JWTClaims struct {
@@ -61,6 +61,10 @@ func ParseToken(token string) (*JWTClaims, error) {
 }
 
 func ParseRefreshToken(aToken, rToken string) (newAToken, newRToken string, err error) {
+	accessClaim, err := ParseToken(aToken)
+	if err != nil {
+		return
+	}
 	refreshClaim, err := ParseToken(rToken)
 	if err != nil {
 		return
@@ -68,7 +72,7 @@ func ParseRefreshToken(aToken, rToken string) (newAToken, newRToken string, err 
 
 	if refreshClaim.ExpiresAt > time.Now().Unix() {
 		// refresh未过期，分发新的token
-		return GenerateToken(refreshClaim.ID, refreshClaim.UserName)
+		return GenerateToken(accessClaim.ID, accessClaim.UserName)
 	}
 	// refresh过期
 	return "", "", errors.New("身份过期")

@@ -10,8 +10,8 @@ import (
 func JWTMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		code := 200
-		accessToken := c.GetHeader("access_token")
-		refreshToken := c.GetHeader("refresh_token")
+		accessToken := c.GetHeader("access-Token")
+		refreshToken := c.GetHeader("refresh-Token")
 
 		if accessToken == "" {
 			code = 401
@@ -34,9 +34,7 @@ func JWTMiddleware() gin.HandlerFunc {
 			return
 		}
 		// accessToken未过期
-		if accessClaims.ExpiresAt < time.Now().Unix() {
-			c.Header("access-Token", accessToken)
-			c.Header("refresh-Token", refreshToken)
+		if accessClaims.ExpiresAt > time.Now().Unix() {
 			c.Set("id", accessClaims.ID)
 			c.Set("username", accessClaims.UserName)
 			c.Next()
@@ -73,8 +71,8 @@ func JWTMiddleware() gin.HandlerFunc {
 		}
 		c.Set("id", claims.ID)
 		c.Set("username", claims.UserName)
-		c.Header("access-Token", newAccessToken)
-		c.Header("refresh-Token", newFreshToken)
+		c.Set("access-Token", newAccessToken)
+		c.Set("refresh-Token", newFreshToken)
 		c.Next()
 	}
 }

@@ -27,14 +27,27 @@ func main() {
 	r.Use(middleware.JWTMiddleware())
 	r.GET("/hello", func(c *gin.Context) {
 		userId, idOk := c.Get("id")
-		userName, nameOk := c.Get("user_name")
+		userName, nameOk := c.Get("username")
+		aToken, aTokenOK := c.Get("access-Token")
+		rToken, rTokenOk := c.Get("refresh-Token")
 		if !idOk || !nameOk {
-			c.JSON(http.StatusOK, gin.H{"msg": "hello world"})
+			c.JSON(http.StatusOK, gin.H{"msg": "用户信息不存在"})
+			return
+		}
+
+		if !aTokenOK || !rTokenOk {
+			c.JSON(http.StatusOK, gin.H{
+				"id":       userId,
+				"userName": userName,
+				"msg":      "token未更新",
+			})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{
 			"id":       userId,
 			"username": userName,
+			"aToken":   aToken,
+			"rToken":   rToken,
 		})
 	})
 	r.Run(":8000")
