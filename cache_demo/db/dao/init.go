@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"gorm.io/driver/mysql"
@@ -9,7 +10,7 @@ import (
 	"gorm.io/plugin/dbresolver"
 )
 
-var _db *gorm.DB
+var db *gorm.DB
 
 func InitMySQL() {
 	// 假装两个mysql服务器，进行读写分离, 电商读多写少
@@ -18,12 +19,12 @@ func InitMySQL() {
 	write1_dsn := "root:1234@tcp(localhost:3306)/cache_demo?parseTime=true"
 	write2_dsn := "root:1234@tcp(localhost:3306)/cache_demo?parseTime=true"
 
-	db, err := gorm.Open(mysql.Open(write1_dsn), &gorm.Config{})
+	conn, err := gorm.Open(mysql.Open(write1_dsn), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
-	_db = db
-	_db.Use(
+	db = conn
+	db.Use(
 		dbresolver.Register(dbresolver.Config{
 			Sources:  []gorm.Dialector{mysql.Open(write2_dsn)},
 			Replicas: []gorm.Dialector{mysql.Open(read1_dsn), mysql.Open(read2_dsn)},
@@ -37,10 +38,23 @@ func InitMySQL() {
 			SetMaxOpenConns(200),
 	)
 
-	_db = _db.Set("gorm:table_options", "charset=utf8mb4")
+	db = db.Set("gorm:table_options", "charset=utf8mb4")
 }
 
 func NewDBClient(ctx context.Context) *gorm.DB {
-	db := _db
 	return db.WithContext(ctx)
+}
+
+func GetDB() *gorm.DB {
+	sqlDB, err := db.DB()
+	if err != nil {
+		fmt.Errorf("connect db server failed.")
+		InitMySQL()
+	}
+	if err := sqlDB.Ping(); err != nil {
+		sqlDB.Close()
+		InitMySQL()
+	}
+
+	return db
 }

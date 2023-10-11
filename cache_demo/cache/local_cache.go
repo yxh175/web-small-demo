@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+var LocalCache *Cache
+
 // 缓存数据的结构
 type Cache struct {
 	mu      sync.RWMutex
@@ -44,4 +46,8 @@ func (c *Cache) Get(key string) (interface{}, bool) {
 	delete(c.data, key)
 	delete(c.expires, key)
 	return nil, false
+}
+
+func InitLocal() {
+	LocalCache = NewCache()
 }

@@ -8,6 +8,8 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+var RDCache *RedisCache
+
 type RedisCache struct {
 	client *redis.Client
 }
@@ -65,4 +67,8 @@ func (rc *RedisCache) Delete(key string) error {
 		return fmt.Errorf("删除缓存失败: %v", err)
 	}
 	return nil
+}
+
+func InitRedis() {
+	RDCache = NewRedisCache()
 }
