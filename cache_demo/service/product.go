@@ -6,6 +6,7 @@ import (
 	"gin-mall/cache_demo/cache"
 	"gin-mall/cache_demo/db/dao"
 	"gin-mall/cache_demo/db/model"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -85,5 +86,62 @@ func (ps *ProductSrv) GetData(c *gin.Context, pId uint) (product *model.Product,
 		fmt.Println("反序列化失败:", err)
 		return
 	}
+	return
+}
+
+func (ps *ProductSrv) UpdateData(c *gin.Context, pId uint, newPrice float64) (err error) {
+	// 先操作数据库，在删除缓存是比较好的选择
+	// 后删除防止别的线程进入数据库查询
+	uniqueKey := key + fmt.Sprint(pId)
+	// 更新数据库
+	if err = dao.NewProductDao(c).UpdateProduct(pId, &model.Product{Price: newPrice}); err != nil {
+		return
+	}
+
+	// 更新缓存, 从下到上
+	err = ps.redisCache.Delete(uniqueKey)
+	if err == redis.Nil {
+		return nil
+	}
+	ps.localCache.Delete(uniqueKey)
+	return
+}
+
+func (ps *ProductSrv) DeleteData(c *gin.Context, pId uint) (err error) {
+	uniqueKey := key + fmt.Sprint(pId)
+
+	if err = dao.NewProductDao(c).DeleteProduct(pId); err != nil {
+		return
+	}
+
+	// 更新缓存, 从下到上
+	err = ps.redisCache.Delete(uniqueKey)
+	if err == redis.Nil {
+		return nil
+	}
+	ps.localCache.Delete(uniqueKey)
+	return
+}
+
+func (ps *ProductSrv) CreateData(c *gin.Context) (err error) {
+	rand.Seed(time.Now().Unix())
+	pid := rand.Intn(10000)
+	uniqueKey := key + fmt.Sprint(pid)
+	newProduct := &model.Product{
+		PID:  uint(pid),
+		Name: "测试",
+	}
+	if err = dao.NewProductDao(c).CreateProduct(newProduct); err != nil {
+		return
+	}
+	data, err := json.Marshal(newProduct)
+	if err != nil {
+		return err
+	}
+	err = ps.redisCache.Set(uniqueKey, string(data), 60*time.Second)
+	if err == nil {
+		return
+	}
+	ps.localCache.Set(uniqueKey, data, 10*time.Second)
 	return
 }

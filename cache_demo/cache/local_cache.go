@@ -48,6 +48,13 @@ func (c *Cache) Get(key string) (interface{}, bool) {
 	return nil, false
 }
 
+func (c *Cache) Delete(key string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	delete(c.data, key)
+	delete(c.expires, key)
+}
+
 func InitLocal() {
 	LocalCache = NewCache()
 }
