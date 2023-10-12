@@ -2,7 +2,6 @@ package dao
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"gorm.io/driver/mysql"
@@ -48,7 +47,6 @@ func NewDBClient(ctx context.Context) *gorm.DB {
 func GetDB() *gorm.DB {
 	sqlDB, err := db.DB()
 	if err != nil {
-		fmt.Errorf("connect db server failed.")
 		InitMySQL()
 	}
 	if err := sqlDB.Ping(); err != nil {

@@ -38,9 +38,8 @@ func (rc *RedisCache) Ping() error {
 }
 
 // Set 用于设置缓存数据
-func (rc *RedisCache) Set(key, value string, expiration time.Duration) error {
-	ctx := context.Background()
-	err := rc.client.Set(ctx, key, value, expiration).Err()
+func (rc *RedisCache) Set(c context.Context, key, value string, expiration time.Duration) error {
+	err := rc.client.Set(c, key, value, expiration).Err()
 	if err != nil {
 		return fmt.Errorf("设置缓存失败: %v", err)
 	}
@@ -48,9 +47,8 @@ func (rc *RedisCache) Set(key, value string, expiration time.Duration) error {
 }
 
 // Get 用于获取缓存数据
-func (rc *RedisCache) Get(key string) (string, error) {
-	ctx := context.Background()
-	cacheValue, err := rc.client.Get(ctx, key).Result()
+func (rc *RedisCache) Get(c context.Context, key string) (string, error) {
+	cacheValue, err := rc.client.Get(c, key).Result()
 	if err == redis.Nil {
 		return "", err
 	} else if err != nil {
@@ -60,13 +58,38 @@ func (rc *RedisCache) Get(key string) (string, error) {
 }
 
 // Delete 用于删除缓存数据
-func (rc *RedisCache) Delete(key string) error {
-	ctx := context.Background()
-	err := rc.client.Del(ctx, key).Err()
+func (rc *RedisCache) Delete(c context.Context, key string) error {
+	err := rc.client.Del(c, key).Err()
 	if err != nil {
 		return fmt.Errorf("删除缓存失败: %v", err)
 	}
 	return nil
+}
+
+func (rc *RedisCache) SetNx(c context.Context, key string, requestId string) (locked bool, err error) {
+
+	// 尝试获取锁
+	locked, err = rc.client.SetNX(c, key, requestId, 60*time.Second).Result()
+	return
+}
+
+func (rc *RedisCache) Unlock(c context.Context, key string, requestId string) (unlocked bool, err error) {
+
+	// 查看是否是自己的锁
+	val, err := rc.client.Get(c, key).Result()
+	if err != nil {
+		return
+	}
+	// 别人的锁无法解开
+	if val != requestId {
+		return unlocked, nil
+	}
+	// 正常解锁
+	if _, err = rc.client.Del(c, key).Result(); err != nil {
+		return
+	}
+	unlocked = true
+	return
 }
 
 func InitRedis() {

@@ -80,7 +80,7 @@ func TestGetByRedis(t *testing.T) {
 func getByRedis(redisCache *RedisCache, pid uint, dao *dao.ProductDao) (product *model.Product, err error) {
 	localKey := key + fmt.Sprint(pid)
 	// 从缓存中获取数据
-	value, err := redisCache.Get(localKey)
+	value, err := redisCache.Get(context.Background(), localKey)
 
 	if err != nil {
 		if err != redis.Nil {
@@ -103,7 +103,7 @@ func getByRedis(redisCache *RedisCache, pid uint, dao *dao.ProductDao) (product 
 			return
 		}
 		// 更新缓存
-		redisCache.Set(localKey, string(jsonData), 10*time.Second)
+		redisCache.Set(context.Background(), localKey, string(jsonData), 10*time.Second)
 		return
 	}
 	product = &model.Product{}
