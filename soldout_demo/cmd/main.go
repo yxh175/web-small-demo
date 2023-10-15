@@ -9,12 +9,12 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 )
 
 func init() {
 	dao.InitMySQL()
-	getOrder()
+	go getOrder()
 }
 
 func main() {
@@ -27,8 +27,9 @@ func addOrder(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
-	r.ParseForm()
-	uid := r.FormValue("uid")
+	// r.ParseForm()
+	// uid := r.FormValue("uid")
+	uid := "123"
 
 	rl.EvalScript(uid)
 }
@@ -45,8 +46,21 @@ func getOrder() {
 	subject := "my_orders_stream"
 	consumerGroup := "my_orders_consumer_group"
 
+	// 创建stream
+	err := client.XAdd(ctx, &redis.XAddArgs{
+		Stream: subject,
+		ID:     "*",
+		Values: map[string]interface{}{
+			"user_id": "hh",
+		},
+	}).Err()
+	if err != nil {
+		fmt.Printf("创建stream异常: %v\n", err)
+		return
+	}
+
 	// 创建 Redis Stream 操作器
-	err := client.XGroupCreate(ctx, subject, consumerGroup, "$")
+	err = client.XGroupCreate(ctx, subject, consumerGroup, "$").Err()
 	if err != nil {
 		fmt.Printf("创建消费者组出错: %v\n", err)
 		return
@@ -68,10 +82,15 @@ func getOrder() {
 		}
 
 		for _, message := range messages {
+			fmt.Println("获取到信息", message)
 			for _, xMessage := range message.Messages {
 				userId := xMessage.Values["user_id"]
+				if userId == nil {
+					fmt.Println("无效消息")
+					break
+				}
 				order := &model.Order{
-					Gid: userId.(int),
+					Name: userId.(string),
 				}
 				err = orderDb.AddOrder(order)
 				if err != nil {
