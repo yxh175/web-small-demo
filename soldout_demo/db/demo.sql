@@ -9,3 +9,15 @@ CREATE TABLE products (
     price DECIMAL(10, 2) NOT NULL,
     count INT NOT NULL
 );
+
+
+DROP TABLE if exists orders;
+CREATE TABLE orders (
+    id INT UNSIGNED AUTO_INCREMENT,
+    uid INT,
+    pid INT,
+    name VARCHAR(255),
+    count INT,
+    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+);

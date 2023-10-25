@@ -23,11 +23,9 @@ end
 
 
 -- 增加至订单队列
-redis.call("XADD", orderList, '*', 'user_id', user_id)
-
+redis.call("LPUSH", orderList, userId)
 -- 增加至用户集合
 redis.call("SADD", orderSet, userId)
-
 -- 库存数减1
 redis.call("DECR", goodsTotal)
 
